@@ -18,8 +18,10 @@ class MarkovPoemGenerator(object):
 		# Open File
 		with open(file_name, 'r') as myfile:
 			self.corpus = myfile.read().replace('\n', ' ')
-		self.corpus_noStop = [word.translate(str.maketrans('','', string.punctuation)) for word in self.corpus.split() if word not in stopwords.words('english')]
-		print(self.corpus_noStop)
+
+		# TODO: Translate punctuation is removing apostrophes and making some words unreadable
+		# contractions are also not readable
+		self.corpus_noStop = [word.translate(str.maketrans('','', string.punctuation)).lower() for word in self.corpus.split() if word not in stopwords.words('english')]
 
 		# Make Sonnet here
 		self.sonnet = self.make_markov_sonnet()
@@ -46,10 +48,11 @@ class MarkovPoemGenerator(object):
 		"""
 		outArray = []
 		for i in reversed(range(1, len(self.corpus_noStop))):
-			if self.corpus_noStop[i].lower() == start_word.lower() and self.find_syllables(self.corpus_noStop[i-1]) <= max_length:
+			if self.corpus_noStop[i].lower() == start_word.lower() and self.find_syllables(self.corpus_noStop[i-1]) <= max_length and self.find_syllables(self.corpus_noStop[i-1]) != 0:
 				outArray.append(self.corpus_noStop[i-1])
-				print(self.corpus_noStop[i-1] + " : " + str(self.find_syllables(self.corpus_noStop[i-1])))
-
+		if len(outArray) == 0:
+			print("outArray is empty for:" + start_word)
+			outArray = [word for word in self.corpus_noStop if (self.find_syllables(word) < max_length)]
 		return outArray
 
 	def make_line(self, last_word = None, size = 10):
@@ -89,33 +92,42 @@ class MarkovPoemGenerator(object):
 
 		# If there are still no rhymes, increase level
 		if len(rhymes) == 0 and level < 10:
+			print("Rhyme Level increased to: " + level)
 			rhymes = self.rhyme(inp, level + 1);
 
 		# if there are no rhymes in corpus, get any rhyme
 		if len(rhymes) == 0:
+			print(inp + " is rhymeless")
 			for (word, syllable) in syllables:
 	 			rhymes += [word for word, pron in entries if pron[-level:] == syllable[-level:]]
 
 		return rhymes
 
 	def make_markov_sonnet(self):
-		# sonnet rhyme scheme
-		# ABBA - CDC - DCD
-		# write 1st line
+		# Sonnet rhyme scheme
+		# ABBA - CDCD - EFEF - GG
+		# Write 1st line
 		line1 = self.make_line()
-		# write 4th line to rhyme with first
+		# Write 4th line to rhyme with first
 		line4 = self.make_line(line1.split()[-1])
-		# write 2,3
+		# Write 2,3
 		line2 = self.make_line()
 		line3 = self.make_line(line2.split()[-1])
-		# write 6,8,10
+		# Write 6,8
 		line6 = self.make_line()
 		line8 = self.make_line(line6.split()[-1])
-		line10 = self.make_line(line6.split()[-1])
-		# write 5,7,9
+		# Write 5,7
 		line5 = self.make_line()
 		line7 = self.make_line(line5.split()[-1])
-		line9 = self.make_line(line5.split()[-1])
+		# Write line 9, 11
+		line9 = self.make_line()
+		line11 = self.make_line(line9.split()[-1])
+		# Write line 10,12
+		line10 = self.make_line()
+		line12 = self.make_line(line10.split()[-1])
+		# Write line 13,14
+		line13 = self.make_line()
+		line14 = self.make_line(line13.split()[-1])
 
 		print(line1)
 		print(line2)
@@ -127,6 +139,10 @@ class MarkovPoemGenerator(object):
 		print(line8)
 		print(line9)
 		print(line10)
+		print(line11)
+		print(line12)
+		print(line13)
+		print(line14)
 
 if __name__ == '__main__':
 	mGen = MarkovPoemGenerator('shakespeare.txt') # increase defaults
