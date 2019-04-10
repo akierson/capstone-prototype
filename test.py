@@ -1,2 +1,3 @@
-with open('shakespeare.txt') as mydata:
-    print(mydata.read())
+import  datetime
+
+print(str(datetime.datetime.now()).strip("-"))
