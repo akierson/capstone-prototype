@@ -7,24 +7,46 @@ import string
 from nltk.corpus import stopwords
 from nltk.corpus import cmudict
 
+# TODO: Add error reporting
+
 d = cmudict.dict()
 
 class MarkovPoemGenerator(object):
 	"""docstring for MarkovPoemGenerator."""
 
-	def __init__(self, file_name):
+	def __init__(self, file_name=None):
 		super(MarkovPoemGenerator, self).__init__()
 
+		# Init if no file name
+		self.corpus = ""
+		self.corpus_noStop = ""
+
 		# Open File
-		with open(file_name, 'r') as myfile:
-			self.corpus = myfile.read().replace('\n', ' ')
+		if file_name != None:
+			with open(file_name, 'r') as myfile:
+				self.corpus = myfile.read().replace('\n', ' ')
+
+			# TODO: Translate punctuation is removing apostrophes and making some words unreadable
+			# contractions are also not readable
+			self.corpus_noStop = [word.translate(str.maketrans('','', string.punctuation)).lower() for word in self.corpus.split() if word not in stopwords.words('english')]
+
+		# Placeholder for sonnet
+		self.sonnet = ""
+
+	def add_to_corpus(self, string):
+		"""
+		Function: add_to_corpus
+		Param:
+		string, string to add to corpus
+		@Returns none
+		"""
+
+		self.corpus += string.replace('\n', ' ')
 
 		# TODO: Translate punctuation is removing apostrophes and making some words unreadable
 		# contractions are also not readable
-		self.corpus_noStop = [word.translate(str.maketrans('','', string.punctuation)).lower() for word in self.corpus.split() if word not in stopwords.words('english')]
+		self.corpus_noStop += [word.translate(str.maketrans('','', string.punctuation)).lower() for word in string.split() if word not in stopwords.words('english')]
 
-		# Make Sonnet here
-		self.sonnet = self.make_markov_sonnet()
 
 	def find_syllables(self, word):
 		"""
@@ -55,6 +77,7 @@ class MarkovPoemGenerator(object):
 			outArray = [word for word in self.corpus_noStop if (self.find_syllables(word) < max_length)]
 		return outArray
 
+	# TODO: increase length of markov chain based on corpus 
 	def make_line(self, last_word = None, size = 10):
 		"""
 		Function: make_line
@@ -67,7 +90,8 @@ class MarkovPoemGenerator(object):
 		if last_word == None:
 			last_word = random.choice(self.corpus_noStop)
 		else:
-			last_word = random.choice(self.rhyme(last_word, 0))
+			# TODO: Should start from zero and only increase if only rhyme is self
+			last_word = random.choice(self.rhyme(last_word, 1))
 
 		# Initialize line from end
 		prev_word = random.choice(self.get_possible_words(last_word, size))
@@ -84,6 +108,13 @@ class MarkovPoemGenerator(object):
 		return line
 
 	def rhyme(self, inp, level):
+		"""
+		Function: rhyme
+		Param:
+		inp, string that should be rhymed with
+		level, int indicating accuracy of rhyme
+		@Returns a word from the corpus that matches inp
+		"""
 		entries = cmudict.entries()
 		syllables = [(word, syl) for word, syl in entries if word == inp]
 		rhymes = []
@@ -104,6 +135,14 @@ class MarkovPoemGenerator(object):
 		return rhymes
 
 	def make_markov_sonnet(self):
+		"""
+		Function: make_markov_sonnet
+		creates a sonnet from the given corpus
+		Param:
+		none
+		@Returns none
+		"""
+		# TODO: Should add to
 		# Sonnet rhyme scheme
 		# ABBA - CDCD - EFEF - GG
 		# Write 1st line
@@ -129,6 +168,8 @@ class MarkovPoemGenerator(object):
 		line13 = self.make_line()
 		line14 = self.make_line(line13.split()[-1])
 
+		print("\nABBA - CDCD - EFEF - GG")
+		print("----Poem----")
 		print(line1)
 		print(line2)
 		print(line3)
@@ -143,6 +184,9 @@ class MarkovPoemGenerator(object):
 		print(line12)
 		print(line13)
 		print(line14)
+		self.sonnet = "\n".join([line1, line2, line3, line4, line5, line6, line7, line8, line9, line10, line11, line12, line13, line14])
 
 if __name__ == '__main__':
-	mGen = MarkovPoemGenerator('shakespeare.txt') # increase defaults
+	mGen = MarkovPoemGenerator('../testCorpus/shakespeare.txt')
+	# increase defaults
+	print(mGen.sonnet)
