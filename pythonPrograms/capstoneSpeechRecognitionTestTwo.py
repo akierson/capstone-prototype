@@ -31,15 +31,17 @@ def callback(recognizer, audio):
 		print("Google Speech Recognition could not understand audio")
 	except sr.RequestError as e:
 		print("Could not request results from Google Speech Recognition service; {0}".format(e))
-		
-if __name__ == '__main__':
-	mGen = mpg.MarkovPoemGenerator('')
-	# Get Text from Speech
 
+if __name__ == '__main__':
+	# Initialize classes
+	mGen = mpg.MarkovPoemGenerator()
 	r = sr.Recognizer()
 	mic = sr.Microphone()
 
-	#
+	# TODO: add loop
+
+	# Start audio recording
+	# TODO: figure out how this works with other mics
 	with mic as source:
 	    audio = r.listen(source)
 
@@ -50,15 +52,14 @@ if __name__ == '__main__':
 	r.listen_in_background(mic, callback)
 	print(textfromspeech)
 
+	# Have break here when poem is printing
 
+	# have min wait time
 
-	# Run MarkovPoemGenerator
-
-	# now = datetime.datetime.now()
-	# fileName = "capstoneTest" + str(now).translate(str.maketrans('','', string.punctuation)) + ".txt"
-	#
-	# file = open(fileName, "w")
-	#
-	# file.write(textfromspeech)
-	#
-	# capstoneTestTwo.MarkovPoemGenerator(fileName)
+	# Add to corpus
+	mGen.add_to_corpus(textfromspeech)
+	# Check size of corpus
+	if len(mGen.corpus_noStop) > 700:
+		# Run algorithm
+		mGen.make_markov_sonnet
+		# Print poem ??

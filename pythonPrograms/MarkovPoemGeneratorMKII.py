@@ -1,9 +1,14 @@
 # By: Azariah Kierson-Galeano
-# 4/3/19
-# Same as previous but now as a class
+# 9/1/19
+# Mk II of Class based Poem Generator
+# Added Poem types:
+# Sonnets
+#
+# haiku
 
 import random
 import string
+import re
 from nltk.corpus import stopwords
 from nltk.corpus import cmudict
 
@@ -89,9 +94,15 @@ class MarkovPoemGenerator(object):
 		size, th integer number of syllables in the returned line
 		@Returns a line with the number of syllables
 		"""
-		# If no rhyme given, rhyme is randomly choosen
+		# TODO: Use iambic pentameter
+		# ie unstressed, stressed syllable (1,2)
+
+		# If no rhyme given, rhyme is randomly choosen such that last sylable in word is stressed
 		if last_word == None:
 			last_word = random.choice(self.corpus_noStop)
+			while re.sub('[^0-9]','', d[last_word])[-1] == 0:
+				last_word = random.choice(self.corpus_noStop)
+
 		else:
 			# TODO: Should start from zero and only increase if only rhyme is self
 			last_word = random.choice(self.rhyme(last_word, 1))
