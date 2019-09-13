@@ -1,8 +1,9 @@
-from nltk.corpus import cmudict
-import random
+import types
 
-d = cmudict.dict()
+a = 'this is a string'
+b =['this','is', 'a', 'string']
 
-last_word = random.choice()
-while re.sub('[^0-9]','', d[last_word])[-1] != 1 or 2:
-    last_word = random.choice()
+print(type(a))
+print(type(b))
+print(isinstance(a, str))
+print(isinstance(b, list))

@@ -187,7 +187,7 @@ class MarkovPoemGenerator(object):
 		print(self.poem)
 
 if __name__ == '__main__':
-	mGen = MarkovPoemGenerator('../testCorpus/shakespeare.txt')
+	mGen = MarkovPoemGenerator('../testCorpus/behemoth_lyrics.txt')
 	# increase defaults
 	# mGen.make_markov_sonnet()
 	mGen.make_markov_haiku()

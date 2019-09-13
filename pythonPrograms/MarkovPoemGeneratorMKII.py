@@ -3,16 +3,14 @@
 # Mk II of Class based Poem Generator
 # Added Poem types:
 # Sonnets
-#
 # haiku
 
 import random
 import string
+import types
 import re
 from nltk.corpus import stopwords
 from nltk.corpus import cmudict
-
-# TODO: Add error reporting
 
 d = cmudict.dict()
 
@@ -23,34 +21,41 @@ class MarkovPoemGenerator(object):
 		super(MarkovPoemGenerator, self).__init__()
 
 		# Init if no file name
-		self.corpus = ""
-		self.corpus_noStop = ""
+		self.corpus = []
+		self.corpus_noStop = []
 
 		# Open File
 		if file_name != None:
+			self.corpus = []
+			self.corpus_noStop = []
 			with open(file_name, 'r') as myfile:
-				self.corpus = myfile.read().replace('\n', ' ').lower().split()
-
-			# TODO: Translate punctuation is removing apostrophes and making some words unreadable
-			# contractions are also not readable
-			self.corpus_noStop = [word.translate(str.maketrans('','', string.punctuation)).lower() for word in self.corpus if word not in stopwords.words('english')]
+				self.add_to_corpus(myfile.read())
 
 		# Placeholder for sonnet
 		self.poem = ""
 
-	def add_to_corpus(self, string):
+	def add_to_corpus(self, newCorpus):
+		# TODO: Check if word is empty before adding to poem
 		"""
 		Function: add_to_corpus
 		Param:
-		string, string to add to corpus
+		newCorpus, string to add to corpus
 		@Returns none
 		"""
+		custpunct = '!"#$%&()*+, -./:;<=>?@[\\]^_`{|}~'
+		# Added Error checking for lists
+		if isinstance(newCorpus, str):
+			newCorpus = [word.translate(str.maketrans('','', custpunct)) for word in newCorpus.replace('\n', ' ').lower().split(" ")]
 
-		self.corpus += string.replace('\n', ' ').lower().split()
+		elif isinstance(newCorpus, list) :
+			print(type(newCorpus))
+			newCorpus = [word.translate(str.maketrans('','', custpunct)).lower() for word in newCorpus]
 
-		# TODO: Translate punctuation is removing apostrophes and making some words unreadable
-		# contractions are also not readable
-		self.corpus_noStop += [word.translate(str.maketrans('','', string.punctuation)).lower() for word in string.lower().split() if word not in stopwords.words('english')]
+		else:
+			print(type(newCorpus))
+		self.corpus += newCorpus
+
+		self.corpus_noStop += [word for word in newCorpus if word not in stopwords.words('english')]
 
 
 	def find_syllables(self, word):
@@ -74,14 +79,13 @@ class MarkovPoemGenerator(object):
 		@Returns an array of words from the text that follow startWord
 		"""
 		outArray = []
-		# TODO: extend number of words to 3
+		# TODO: extend number based on length of corpus
 		for i in reversed(range(1, len(self.corpus))):
 			if self.corpus[i].lower() == start_word.lower() and self.find_syllables(self.corpus[i-1]) <= max_length and self.find_syllables(self.corpus[i-1]) != 0:
-				outArray.append(self.corpus[i-1])\
-		# TODO: correct for words not appearing in cmudict
+				outArray.append(self.corpus[i-1])
 		if len(outArray) == 0:
 			print("outArray is empty for:" + start_word)
-			outArray = [word for word in self.corpus if (self.find_syllables(word) < max_length)]
+			outArray = [word for word in self.corpus_noStop if (self.find_syllables(word) < max_length)]
 		return outArray
 
 	# TODO: increase length of markov chain based on corpus
@@ -97,15 +101,15 @@ class MarkovPoemGenerator(object):
 		# TODO: Use iambic pentameter
 		# ie unstressed, stressed syllable (1,2)
 
+		# TODO: select word based on rhyme scheme
 		# If no rhyme given, rhyme is randomly choosen such that last sylable in word is stressed
+		# TODO: Make lines forwards if used in haiku
 		if last_word == None:
-			last_word = random.choice(self.corpus_noStop)
-			while re.sub('[^0-9]','', d[last_word])[-1] == 0:
-				last_word = random.choice(self.corpus_noStop)
+			last_word = random.choice(self.corpus)
 
 		else:
 			# TODO: Should start from zero and only increase if only rhyme is self
-			last_word = random.choice(self.rhyme(last_word, 1))
+			last_word = random.choice(self.rhyme(last_word))
 
 		# Initialize line from end
 		prev_word = random.choice(self.get_possible_words(last_word, size))
@@ -121,7 +125,7 @@ class MarkovPoemGenerator(object):
 
 		return line
 
-	def rhyme(self, inp, level):
+	def rhyme(self, inp, level = 0):
 		"""
 		Function: rhyme
 		Param:
@@ -129,28 +133,47 @@ class MarkovPoemGenerator(object):
 		level, int indicating accuracy of rhyme
 		@Returns a word from the corpus that matches inp
 		"""
+		# TODO: have error reporting if only rhyme is self
 		# Get dictionary from Carnegie Mellon University API
 		entries = cmudict.entries()
 		# Get number of syllables for the inp word from dictionary
 		syllables = [(word, syl) for word, syl in entries if word == inp]
+		print(inp, " - ", syllables)
 		# Create empty rhyming list
 		rhymes = []
-		#
+
 		for (word, syllable) in syllables:
- 			rhymes += [word for word, pron in entries if pron[-level:] == syllable[-level:]]
+ 			rhymes += [word for word, pron in entries if pron[-level:] == syllable[-level:] and word in self.corpus_noStop]
 
+		print(inp, " rhymes with ", rhymes)
 		# If there are still no rhymes, increase level
-		if len(rhymes) == 0 and level < 10:
-			print("Rhyme Level increased to: " + level)
-			rhymes = self.rhyme(inp, level + 1);
+		# if 0, word not in dictionary
+		# if 1, only rhyme is self
+		if len(rhymes) <= 1 and level < 3:
+			level += 1
+			print("Rhyme Level increased to: ", level)
+			rhymes = self.rhyme(inp, level);
 
-		# if there are no rhymes in corpus, get any rhyme
-		if len(rhymes) == 0:
-			print(inp + " is rhymeless")
+		# If there are no rhymes in corpus, get any rhyme
+		while len(rhymes) <= 1:
+			print(inp + " has no rhyme in the corpus")
 			for (word, syllable) in syllables:
 	 			rhymes += [word for word, pron in entries if pron[-level:] == syllable[-level:]]
 
 		return rhymes
+
+	# for Round 3
+	def make_markov_poem(self, lines = 5, line_length = 20):
+		# TODO: Add Rhyme Scheme
+		"""
+		Function: make_markov_poem
+		creates a sonnet from the given corpus
+		Param:
+		none
+		@Returns none
+		"""
+		for line in lines:
+			self.poem += self.make_line(last_word = self.poem[-1], size = line_length)
 
 	def make_markov_sonnet(self):
 		"""
@@ -190,15 +213,15 @@ class MarkovPoemGenerator(object):
 		print(self.poem)
 
 	def make_markov_haiku(self):
-		line1 = self.make_line(last_word = None, size=5)
-		line2 = self.make_line(last_word = None, size=7)
-		line3 = self.make_line(last_word = None, size=5)
+		line1 = self.make_line(size=5)
+		line2 = self.make_line(size=7)
+		line3 = self.make_line(size=5)
 
 		self.poem = "\n".join([line1, line2, line3])
 		print(self.poem)
 
 if __name__ == '__main__':
-	mGen = MarkovPoemGenerator('../testCorpus/shakespeare.txt')
-	# increase defaults
-	# mGen.make_markov_sonnet()
-	mGen.make_markov_haiku()
+	mGen = MarkovPoemGenerator('../testCorpus/behemoth_lyrics.txt')
+
+	mGen.make_markov_sonnet()
+	# mGen.make_markov_haiku()

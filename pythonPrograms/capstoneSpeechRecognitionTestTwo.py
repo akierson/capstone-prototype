@@ -3,19 +3,17 @@
 # Using previous and listen_in_background from Speech Recognition
 # Made call callable from
 
-import speech_recognition as sr
-import datetime
-import string
+# Based on https://github.com/Uberi/speech_recognition/blob/master/examples/background_listening.py
 
-import random
-import string
-from nltk.corpus import stopwords
-from nltk.corpus import cmudict
+import speech_recognition as sr
+import time
+import sys
 import MarkovPoemGenerator as mpg
 
 GOOGLE_KEY = ""
 
-d = cmudict.dict()
+# Need to instanstiate variable before in order to call from callback
+mGen = mpg.MarkovPoemGenerator()
 
 # Create test phrase for script to match ie change params until phrase x is matched. run 5 times
 
@@ -25,16 +23,21 @@ d = cmudict.dict()
 def callback(recognizer, audio):
 	# received audio data, now we'll recognize it using Google Speech Recognition
 	try:
-		r.recognize_google(audio, key=GOOGLE_KEY)
+		# TODO: Add other speech recognizers
+		# Run Speech recognizer here
+		# text = recognizer.recognize_google(audio, key=GOOGLE_KEY)
+		text = recognizer.recognize_google(audio)
 		# Pass variable out
+		print(text)
+		mGen.add_to_corpus(text)
 	except sr.UnknownValueError:
 		print("Google Speech Recognition could not understand audio")
 	except sr.RequestError as e:
 		print("Could not request results from Google Speech Recognition service; {0}".format(e))
 
 if __name__ == '__main__':
+	# TODO: Error reporting
 	# Initialize classes
-	mGen = mpg.MarkovPoemGenerator()
 	r = sr.Recognizer()
 	mic = sr.Microphone()
 
@@ -43,23 +46,21 @@ if __name__ == '__main__':
 	# Start audio recording
 	# TODO: figure out how this works with other mics
 	with mic as source:
-	    audio = r.listen(source)
+		r.adjust_for_ambient_noise(source)
 
-	textfromspeech = r.recognize_google(audio)
+	while True:
+		#  call stop_listening to stop audio
+		stop_listening = r.listen_in_background(mic, callback)
 
-	# Mix is source
-	# callback is a function
-	r.listen_in_background(mic, callback)
-	print(textfromspeech)
+		# Check size of corpus
+		if len(mGen.corpus_noStop) > 700:
+			print("corpus")
+			# Call Stop
+			stop_listening(wait_for_stop=False)
+			# Run algorithm
+			mGen.make_markov_sonnet()
+			# Print poem ??
+			time.sleep(1)
+			sys.exit()
 
-	# Have break here when poem is printing
-
-	# have min wait time
-
-	# Add to corpus
-	mGen.add_to_corpus(textfromspeech)
-	# Check size of corpus
-	if len(mGen.corpus_noStop) > 700:
-		# Run algorithm
-		mGen.make_markov_sonnet
-		# Print poem ??
+		time.sleep(0.1)
