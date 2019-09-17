@@ -47,13 +47,14 @@ class MarkovPoemGenerator(object):
 		if isinstance(newCorpus, str):
 			newCorpus = [word.translate(str.maketrans('','', custpunct)) for word in newCorpus.replace('\n', ' ').lower().split(" ")]
 
-		elif isinstance(newCorpus, list) :
+		elif isinstance(newCorpus, list):
 			print(type(newCorpus))
 			newCorpus = [word.translate(str.maketrans('','', custpunct)).lower() for word in newCorpus]
 
 		else:
 			print(type(newCorpus))
 		self.corpus += newCorpus
+		print()
 
 		self.corpus_noStop += [word for word in newCorpus if word not in stopwords.words('english')]
 
@@ -210,7 +211,6 @@ class MarkovPoemGenerator(object):
 		line14 = self.make_line(line13.split()[-1])
 
 		self.poem = "\n".join([line1, line2, line3, line4, line5, line6, line7, line8, line9, line10, line11, line12, line13, line14])
-		print(self.poem)
 
 	def make_markov_haiku(self):
 		line1 = self.make_line(size=5)
@@ -218,10 +218,11 @@ class MarkovPoemGenerator(object):
 		line3 = self.make_line(size=5)
 
 		self.poem = "\n".join([line1, line2, line3])
-		print(self.poem)
 
 if __name__ == '__main__':
 	mGen = MarkovPoemGenerator('../testCorpus/behemoth_lyrics.txt')
+	mGen.add_to_corpus('../testCorpus/shakespeare.txt')
 
-	mGen.make_markov_sonnet()
-	# mGen.make_markov_haiku()
+	# mGen.make_markov_sonnet()
+	mGen.make_markov_haiku()
+	print(mGen.poem)

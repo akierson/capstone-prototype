@@ -13,7 +13,7 @@ import MarkovPoemGenerator as mpg
 GOOGLE_KEY = ""
 
 # Need to instanstiate variable before in order to call from callback
-mGen = mpg.MarkovPoemGenerator()
+corpus = ""
 
 # Create test phrase for script to match ie change params until phrase x is matched. run 5 times
 
@@ -28,8 +28,8 @@ def callback(recognizer, audio):
 		# text = recognizer.recognize_google(audio, key=GOOGLE_KEY)
 		text = recognizer.recognize_google(audio)
 		# Pass variable out
-		print(text)
-		mGen.add_to_corpus(text)
+		print(type(text))
+		corpus += text
 	except sr.UnknownValueError:
 		print("Google Speech Recognition could not understand audio")
 	except sr.RequestError as e:
@@ -48,19 +48,19 @@ if __name__ == '__main__':
 	with mic as source:
 		r.adjust_for_ambient_noise(source)
 
-	while True:
-		#  call stop_listening to stop audio
-		stop_listening = r.listen_in_background(mic, callback)
+	#  call stop_listening to stop audio
+	stop_listening = r.listen_in_background(mic, callback)
 
-		# Check size of corpus
-		if len(mGen.corpus_noStop) > 700:
-			print("corpus")
-			# Call Stop
-			stop_listening(wait_for_stop=False)
-			# Run algorithm
-			mGen.make_markov_sonnet()
-			# Print poem ??
-			time.sleep(1)
-			sys.exit()
+	# Check size of corpus
+	if len(corpus) > 700:
+		print("corpus")
+		# Call Stop
+		stop_listening(wait_for_stop=False)
+		# Run algorithm
+		mGen = mpg.MarkovPoemGenerator()
+		mGen.add_to_corpus(corpus)
+		mGen.make_markov_sonnet()
+		# Print poem ??
+		time.sleep(1)
 
-		time.sleep(0.1)
+	time.sleep(1)
