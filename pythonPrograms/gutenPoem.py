@@ -8,9 +8,10 @@ import MarkovPoemGeneratorMKII as mpg
 
 mGen = mpg.MarkovPoemGenerator()
 
-for info, text in searchandretrieve("gutenberg-dammit-files-v002.zip", {'Title': 'The Complete Book of Cheese'}):
+for info, text in searchandretrieve("gutenberg-dammit-files-v002.zip", {'Title': 'Moby Dick'}):
     print(info['Title'][0], len(text))
     mGen.add_to_corpus(text)
 
 # print(mGen.corpus)
-mGen.make_markov_haiku()
+mGen.make_markov_sonnet()
+print(mGen.poem)

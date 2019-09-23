@@ -221,7 +221,7 @@ class MarkovPoemGenerator(object):
 
 if __name__ == '__main__':
 	mGen = MarkovPoemGenerator('../testCorpus/behemoth_lyrics.txt')
-	mGen.add_to_corpus('../testCorpus/shakespeare.txt')
+	# mGen.add_to_corpus('../testCorpus/shakespeare.txt')
 
 	# mGen.make_markov_sonnet()
 	mGen.make_markov_haiku()
