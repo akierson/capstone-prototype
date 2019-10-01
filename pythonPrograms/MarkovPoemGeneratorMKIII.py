@@ -9,6 +9,7 @@ import random
 import string
 import types
 import re
+import os
 from nltk.corpus import stopwords
 from nltk.corpus import cmudict
 
@@ -28,8 +29,11 @@ class MarkovPoemGenerator(object):
 		if file_name != None:
 			self.corpus = []
 			self.corpus_noStop = []
-			with open(file_name, 'r') as myfile:
-				self.add_to_corpus(myfile.read())
+			try:
+				with open(os.path.join(os.path.dirname(__file__), file_name), 'r') as myfile:
+					self.add_to_corpus( myfile.read() )
+			except Exception as e:
+				raise
 
 		# Placeholders
 		self.poem = ""

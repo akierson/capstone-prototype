@@ -1,4 +1,3 @@
-var = 1
-if var not in [1,2]:
-    print("var is not 1 or 2")
-    print(var)
+schema = ['this', 'that', 'THE OTHER']
+print([x.islower() for x in schema])
+print(all([x.islower() for x in schema]))

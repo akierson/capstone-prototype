@@ -7,15 +7,16 @@ import random
 # JJ -> adjective
 # VB* -> verb
 
-class TitMaker(object):
+class TitleMaker(object):
     """docstring for TitMaker."""
 
     def __init__(self, corpus=[]):
-        super(TitMaker, self).__init__()
+        super(TitleMaker, self).__init__()
         self.corpus = corpus
         self.schema = [['to', 'VB', 'the', 'NN']]
+        self.title = self.make_title()
 
-    def make_tit(self, schema = []):
+    def make_title(self, schema = []):
         # Select schema
         if schema == []:
             schema = random.choice(self.schema)
@@ -27,20 +28,27 @@ class TitMaker(object):
                 if place.isupper() and place not in nltk.help.upenn_tagset():
                     # TODO: work regex to find nearest tag
                     pass
-
-        n=5 # Length of phrase to test
-        for i, x in enumerate(corpus):
+        n = 3 # Length of phrase to test
+        for i,x in enumerate(corpus):
+        # TODO: add error reporting here
             text = nltk.pos_tag(corpus[i:i+n])
-            for place in title:
+            print("Testing phrase: ", text)
+            for place in schema:
                 if place.isupper():
                     for word in text:
                         if place in word[1]:
-                            title[title.index(place)] = word[0]
-                            break # takes first word for place and returns to loop
-                        # else if place is the last place and
-                        elif :
+                            schema[schema.index(place)] = word[0]
+                            if all([x.islower() for x in schema]):
+                                i += 1
+                                self.title = schema
+                                print(self.title)
+                                return 0
+        print("Error: corpus not longer enough")
+        return 1
+
+
 
 if __name__ == '__main__':
     corpus = open("../testCorpus/behemoth_lyrics.txt").read().split(" ")
-    tm = TitMaker()
-    tm.make_tit()
+    tm = TitleMaker()
+    print(tm.title)
