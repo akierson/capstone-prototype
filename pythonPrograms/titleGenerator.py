@@ -28,7 +28,7 @@ class TitleMaker(object):
                 if place.isupper() and place not in nltk.help.upenn_tagset():
                     # TODO: work regex to find nearest tag
                     pass
-        n = 3 # Length of phrase to test
+        n = 5 # Length of phrase to test
         for i,x in enumerate(corpus):
         # TODO: add error reporting here
             text = nltk.pos_tag(corpus[i:i+n])

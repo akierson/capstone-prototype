@@ -11,15 +11,15 @@ import time
 #         self.baud = 9600
 
 
-ser = serial.Serial('com7', 9600)
+ser = serial.Serial('com5', 9600)
 
 
 time.sleep(5)
-for i in '10101010110010':
+for i in 'this is a test':
 
     ser.write(i.encode('ascii'))
     print(i)
     print(i.encode('ascii'))
-    time.sleep(1)
+    time.sleep(.1)
 
 ser.close()

@@ -13,6 +13,7 @@ import os
 from nltk.corpus import stopwords
 from nltk.corpus import cmudict
 from nltk import pos_tag
+from collections import Counter
 
 d = cmudict.dict()
 
@@ -44,7 +45,6 @@ class MarkovPoemGenerator(object):
 		self.schema = [['to', 'VB', 'the', 'NN']]
 
 	def add_to_corpus(self, newCorpus):
-		# TODO: Check if word is empty before adding to poem
 		"""
 		Function: add_to_corpus
 		Param:
@@ -54,16 +54,15 @@ class MarkovPoemGenerator(object):
 		custpunct = '!"#$%&()*+, -./:;<=>?@[\\]^_`{|}~'
 		# Added Error checking for lists
 		if isinstance(newCorpus, str):
-			newCorpus = [word.translate(str.maketrans('','', custpunct)) for word in newCorpus.replace('\n', ' ').lower().split(" ")]
+			newCorpus = [word.translate(str.maketrans('','', custpunct)) for word in newCorpus.replace('\n', ' ').lower().split(" ") if word]
 
 		elif isinstance(newCorpus, list):
 			print(type(newCorpus))
-			newCorpus = [word.translate(str.maketrans('','', custpunct)).lower() for word in newCorpus]
+			newCorpus = [word.translate(str.maketrans('','', custpunct)).lower() for word in newCorpus if word]
 
 		else:
 			print(type(newCorpus))
 		self.corpus += newCorpus
-		print()
 
 		self.corpus_noStop += [word for word in newCorpus if word not in stopwords.words('english')]
 
@@ -106,6 +105,7 @@ class MarkovPoemGenerator(object):
 		"""
 		if word in d:
 			return [len(list(y for y in x if y[-1].isdigit())) for x in d[word.lower()]][0]
+		# TODO: Error if 0 is returned
 		return 0
 
 	def get_possible_words(self, start_word, max_length):
@@ -117,23 +117,26 @@ class MarkovPoemGenerator(object):
 		@Returns an array of words from the text that follow startWord
 		"""
 		outArray = []
-		# TODO: extend number based on length of corpus
 		for i in reversed(range(1, len(self.corpus))):
 			if self.corpus[i].lower() == start_word.lower() and self.find_syllables(self.corpus[i-1]) <= max_length and self.find_syllables(self.corpus[i-1]) != 0:
 				outArray.append(self.corpus[i-1])
 		if len(outArray) == 0:
-			print("outArray is empty for:" + start_word)
+			print("Error: no possible words for", start_word)
+			# TODO: use words type to get better replacement words
+			print("Selecting words less than", max_length )
 			outArray = [word for word in self.corpus_noStop if (self.find_syllables(word) < max_length)]
 		return outArray
 
 	# TODO: increase length of markov chain based on corpus
 	# Size of Corpus
-	def make_line(self, last_word = None, size = 10):
+	def make_line(self, last_word = None, size = 10, type="MARKOV", chain_length=0):
 		"""
 		Function: make_line
 		Param:
 		last_word, a word that the line should rhyme with
-		size, th integer number of syllables in the returned line
+		size, an integer number of syllables in the returned line
+		type, MARKOV or LINE
+		chain_length, length of chains if using MARKOV
 		@Returns a line with the number of syllables
 		"""
 		# TODO: Use iambic pentameter
@@ -154,14 +157,26 @@ class MarkovPoemGenerator(object):
 		length = self.find_syllables(last_word.lower())
 		line = last_word
 
-		# Markov chain through line to start
-		while length < size:
-			line = prev_word + " " + line
-			# if there is a break here b/c no words have one syllable etc.
-			last_word, prev_word = prev_word, random.choice(self.get_possible_words(prev_word, size - length))
-			length += self.find_syllables(prev_word)
+		if type == "MARKOV":
+			# Markov chain through line to start
+			while length < size:
+				line = prev_word + " " + line
+				# if there is a break here b/c no words have one syllable etc.
+				last_word, prev_word = prev_word, random.choice(self.get_possible_words(prev_word, size - length))
+				length += self.find_syllables(prev_word)
 
-		return line
+			return line
+
+		if type == "LINE":
+			# By full line
+			while length < size:
+				prev_word, last_word = last_word, self.corpus[self.corpus.index(last_word) - 1 ]
+				if self.find_syllables(last_word) > (size - length):
+					last_word = random.choice(self.get_possible_words(prev_word, size - length))
+				line = last_word + " " + line
+				length += self.find_syllables(last_word)
+
+			return line
 
 	def rhyme(self, inp, level = 0):
 		"""
@@ -204,8 +219,9 @@ class MarkovPoemGenerator(object):
 		return rhymes
 
 	# for Round 3
-	def make_markov_poem(self, lines = 5, line_length = 20):
+	def make_markov_poem(self, lines = 5, line_length = 10, lineStruct = [], rhyme = True, rhymeScheme = [1,2,1,2], type="MARKOV"):
 		# TODO: Add Rhyme Scheme
+		# TODO: finish me
 		"""
 		Function: make_markov_poem
 		creates a sonnet from the given corpus
@@ -213,8 +229,12 @@ class MarkovPoemGenerator(object):
 		none
 		@Returns none
 		"""
-		for line in lines:
-			self.poem += self.make_line(last_word = self.poem[-1], size = line_length)
+		# Get number of rhymes
+		rhyme_num = Counter(rhyme).keys()
+		if type == "MARKOV":
+			self.make_markov_sonnet(type="MARKOV")
+		if type == "LINE":
+			self.make_markov_sonnet(type="LINE")
 
 	def make_markov_sonnet(self):
 		"""
@@ -224,8 +244,7 @@ class MarkovPoemGenerator(object):
 		none
 		@Returns none
 		"""
-		# TODO: Should add to
-		# 	Sonnet rhyme scheme
+		# Sonnet rhyme scheme
 		# ABBA - CDCD - EFEF - GG
 		# Write 1st line
 		line1 = self.make_line()
