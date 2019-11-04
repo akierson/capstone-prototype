@@ -12,19 +12,23 @@ import sys
 import sys
 import glob
 import serial
-import MarkovPoemGeneratorMKIII as mpg
+import MarkovPoemGenerator as mpg
 from ibm_watson import SpeechToTextV1
 from ibm_watson.websocket import RecognizeCallback, AudioSource
 from threading import Thread
 from ibm_cloud_sdk_core.authenticators import IAMAuthenticator
+
+# TODO: add question titles
+# TODO: Make explicit
 
 try:
     from Queue import Queue, Full
 except ImportError:
     from queue import Queue, Full
 
-IBM_KEY = open("../keys/ibm-credentials.txt", "r").read()
-ARD_PORT = 'com5'
+IBM_KEY = open("../keys/ibm-credentials.txt", "r").read().strip()
+ARD_PORT = "COM5"
+
 
 def serial_ports():
     """ Lists serial port names
@@ -55,22 +59,24 @@ def serial_ports():
     return result
 
 def writePrinter(string, ser):
-    try:
-        if not ser.isOpen():
-            ser.open()
-        for i in string:
-            ser.write(i.encode(encoding='ascii',error='ignore'))
-        time.sleep(.4)
-    except Exception as e:
-        print(e)
+    if ser:
+        try:
+            if not ser.isOpen():
+                try:
+                    ser.open()
+                except Exception as e:
+                    print("Error Reopening Port:", e)
+            for i in string:
+                ser.write(i.encode(encoding='ascii', error='ignore'))
+            time.sleep(.4)
+        except Exception as e:
+            print(e)
 
 ###############################################
 #### Initalize queue, classes to store the recordings ##
 ###############################################
 
-# TODO: Compare to sr microphone
-
-CHUNK = 1024
+CHUNK = 2048
 # Note: It will discard if the websocket client can't consumme fast enough
 # So, increase the max size as per your choice
 BUF_MAX_SIZE = CHUNK * 10
@@ -80,24 +86,28 @@ q = Queue(maxsize=int(round(BUF_MAX_SIZE / CHUNK)))
 # Create an instance of AudioSource
 audio_source = AudioSource(q, True, True)
 
-mGen = new MarkovPoemGenerator()
+mGen = mpg.MarkovPoemGenerator()
 
 try:
-    ser = new Serial(9600, ARD_PORT)
+    ser = serial.Serial(ARD_PORT)
 except Exception as e:
     print('Error: Input port not available')
-    if serial_ports:
-        ser = new Serial(9600,serial_ports[0])
-    else:
-        print('Error: No available ports')
+
+if serial_ports():
+    ser = serial.Serial(serial_ports[0])
+else:
+    ser = None
+    print('Error: No available ports')
 
 ###############################################
-#### Prepare Speech to Text Service ########
+####### Prepare Speech to Text Service ########
 ###############################################
 
 # initialize speech to text service
-authenticator = IAMAuthenticator('your_api_key')
+authenticator = IAMAuthenticator(IBM_KEY)
 speech_to_text = SpeechToTextV1(authenticator=authenticator)
+
+# Initialize Serial
 
 # define callback for the speech to text service
 class MyRecognizeCallback(RecognizeCallback):
@@ -105,39 +115,50 @@ class MyRecognizeCallback(RecognizeCallback):
         RecognizeCallback.__init__(self)
 
     def on_transcription(self, transcript):
-        print(transcript)
-        mGen.add_to_corpus(transcript)
+        print(transcript[0]['transcript'])
+        mGen.add_to_corpus([x for x in transcript[0]['transcript'].split() if x != '%HESITATION'])
         if len(mGen.corpus_noStop) > 20:
-            print(mGen.poem)
-            writePrinter(mGen.poem, ser)
+            mGen.make_markov_haiku()
+            mGen.print_poem()
+            if ser:
+                writePrinter(mGen.poem, ser)
+                mGen.poem = ""
 
     def on_connected(self):
         print('Connection was successful')
+        writePrinter('#', ser)
+        # TODO: Initialize items here
 
     def on_error(self, error):
         print('Error received: {}'.format(error))
 
     def on_inactivity_timeout(self, error):
         print('Inactivity timeout: {}'.format(error))
+        # TODO: Add restart
 
     def on_listening(self):
         print('Service is listening')
 
     def on_hypothesis(self, hypothesis):
-        print(hypothesis)
+        # Interim result
+        # TODO: Serial Print loading
+        pass
 
     def on_data(self, data):
-        print(data)
+        writePrinter('. ', ser)
+        pass
 
     def on_close(self):
         print("Connection closed")
+        # TODO: Add Closed
+        # TODO: Add Close option from Arduino
 
 # this function will initiate the recognize service and pass in the AudioSource
 def recognize_using_weboscket(*args):
-    mycallback = MyRecognizeCallback()
+    mcallback = MyRecognizeCallback()
     speech_to_text.recognize_using_websocket(audio=audio_source,
                                              content_type='audio/l16; rate=44100',
-                                             recognize_callback=mycallback,
+                                             recognize_callback=mcallback,
                                              interim_results=True)
 
 ###############################################

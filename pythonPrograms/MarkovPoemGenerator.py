@@ -57,11 +57,11 @@ class MarkovPoemGenerator(object):
 			newCorpus = [word.translate(str.maketrans('','', custpunct)) for word in newCorpus.replace('\n', ' ').lower().split(" ") if word]
 
 		elif isinstance(newCorpus, list):
-			print(type(newCorpus))
 			newCorpus = [word.translate(str.maketrans('','', custpunct)).lower() for word in newCorpus if word]
 
 		else:
-			print(type(newCorpus))
+			return -1
+
 		self.corpus += newCorpus
 
 		self.corpus_noStop += [word for word in newCorpus if word not in stopwords.words('english')]
@@ -87,6 +87,7 @@ class MarkovPoemGenerator(object):
 				if place.isupper():
 					for word in text:
 						if place in word[1]:
+							# TODO: change word to word type
 							schema[i] = word[0]
 							if all([x.islower() for x in schema]):
 								i += 1
@@ -105,15 +106,14 @@ class MarkovPoemGenerator(object):
 		"""
 		if word in d:
 			return [len(list(y for y in x if y[-1].isdigit())) for x in d[word.lower()]][0]
-		# TODO: Error if 0 is returned
-		return 0
+		return -1
 
 	def get_possible_words(self, start_word, max_length):
 		"""
 		Function: get_possible_words
 		Param:
 		start_word, a single word
-		max_length, maximum number of sylables for words in outArray
+		max_length, maximum number of syllables for words in outArray
 		@Returns an array of words from the text that follow startWord
 		"""
 		outArray = []
@@ -121,7 +121,7 @@ class MarkovPoemGenerator(object):
 			if self.corpus[i].lower() == start_word.lower() and self.find_syllables(self.corpus[i-1]) <= max_length and self.find_syllables(self.corpus[i-1]) != 0:
 				outArray.append(self.corpus[i-1])
 		if len(outArray) == 0:
-			print("Error: no possible words for", start_word)
+			print("Error: no possible words for '"+ start_word+"'")
 			# TODO: use words type to get better replacement words
 			print("Selecting words less than", max_length )
 			outArray = [word for word in self.corpus_noStop if (self.find_syllables(word) < max_length)]
@@ -147,14 +147,20 @@ class MarkovPoemGenerator(object):
 		# TODO: Make lines forwards if used in haiku
 		if last_word == None:
 			last_word = random.choice(self.corpus_noStop)
+			length = self.find_syllables(last_word.lower())
+
+			while length == -1:
+				last_word = random.choice(self.corpus_noStop)
 
 		else:
-			# TODO: Should start from zero and only increase if only rhyme is self
 			last_word = random.choice(self.rhyme(last_word))
+			length = self.find_syllables(last_word.lower())
+
 
 		# Initialize line from end
-		prev_word = random.choice(self.get_possible_words(last_word, size))
-		length = self.find_syllables(last_word.lower())
+
+		prev_word = random.choice(self.get_possible_words(last_word, size - length))
+
 		line = last_word
 
 		if type == "MARKOV":
@@ -165,8 +171,6 @@ class MarkovPoemGenerator(object):
 				last_word, prev_word = prev_word, random.choice(self.get_possible_words(prev_word, size - length))
 				length += self.find_syllables(prev_word)
 
-			return line
-
 		if type == "LINE":
 			# By full line
 			while length < size:
@@ -176,7 +180,7 @@ class MarkovPoemGenerator(object):
 				line = last_word + " " + line
 				length += self.find_syllables(last_word)
 
-			return line
+		return line
 
 	def rhyme(self, inp, level = 0):
 		"""
@@ -186,7 +190,6 @@ class MarkovPoemGenerator(object):
 		level, int indicating accuracy of rhyme
 		@Returns a word from the corpus that matches inp
 		"""
-		# TODO: have error reporting if only rhyme is self
 		# Get dictionary from Carnegie Mellon University API
 		entries = cmudict.entries()
 		# Get number of syllables for the inp word from dictionary
@@ -277,14 +280,29 @@ class MarkovPoemGenerator(object):
 		line2 = self.make_line(size=7)
 		line3 = self.make_line(size=5)
 
-		self.make_title()
+		if self.title == "":
+			self.make_title()
+
 		self.poem = "\n".join([line1, line2, line3])
+
+	def print_poem(self):
+		if self.title == "":
+			self.make_title()
+		print('\n', " ".join(self.title))
+
+		print('#####')
+
+		if self.poem == "":
+			self.make_markov_haiku()
+		print(self.poem)
+
+		print('#####')
 
 if __name__ == '__main__':
 	mGen = MarkovPoemGenerator('../testCorpus/behemoth_lyrics.txt')
 
 	# mGen.make_markov_sonnet()
-	mGen.make_markov_sonnet()
+	mGen.make_markov_haiku()
 	print(" ".join(mGen.title))
 	print('###')
 	print(mGen.poem)
