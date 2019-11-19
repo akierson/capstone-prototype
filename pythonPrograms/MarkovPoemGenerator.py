@@ -42,7 +42,7 @@ class MarkovPoemGenerator(object):
 		self.title = ""
 
 		# Schema for title
-		self.schema = [['to', 'VB', 'the', 'NN']]
+		self.schema = [['to', 'VB', 'the', 'NN'], ['the', 'NN'], ['JJ', 'NNS']]
 
 	def add_to_corpus(self, newCorpus):
 		"""
@@ -80,14 +80,12 @@ class MarkovPoemGenerator(object):
 					pass
 		n = 5 # Length of phrase to test
 		for i,x in enumerate(self.corpus):
-			# TODO: add error reporting here
 			text = pos_tag(self.corpus[i:i+n])
 			print("Testing phrase: ", text)
 			for i, place in enumerate(schema):
 				if place.isupper():
 					for word in text:
 						if place in word[1]:
-							# TODO: change word to word type
 							schema[i] = word[0]
 							if all([x.islower() for x in schema]):
 								i += 1
@@ -108,7 +106,7 @@ class MarkovPoemGenerator(object):
 			return [len(list(y for y in x if y[-1].isdigit())) for x in d[word.lower()]][0]
 		return -1
 
-	def get_possible_words(self, start_word, max_length):
+	def get_possible_words(self, start_word, max_length, chain_length = 2):
 		"""
 		Function: get_possible_words
 		Param:
@@ -118,13 +116,13 @@ class MarkovPoemGenerator(object):
 		"""
 		outArray = []
 		for i in reversed(range(1, len(self.corpus))):
-			if self.corpus[i].lower() == start_word.lower() and self.find_syllables(self.corpus[i-1]) <= max_length and self.find_syllables(self.corpus[i-1]) != 0:
+			if self.corpus[i].lower() == start_word.lower() and self.find_syllables(self.corpus[i-1]) <= max_length and self.find_syllables(self.corpus[i-1]) > 0:
 				outArray.append(self.corpus[i-1])
 		if len(outArray) == 0:
-			print("Error: no possible words for '"+ start_word+"'")
+			print("Error: no possible words for '" + start_word + "'")
 			# TODO: use words type to get better replacement words
-			print("Selecting words less than", max_length )
-			outArray = [word for word in self.corpus_noStop if (self.find_syllables(word) < max_length)]
+			print("Selecting words less than", max_length)
+			outArray = [word for word in self.corpus_noStop if (self.find_syllables(word) < max_length and self.find_syllables(word) != -1)]
 		return outArray
 
 	# TODO: increase length of markov chain based on corpus
@@ -142,7 +140,6 @@ class MarkovPoemGenerator(object):
 		# TODO: Use iambic pentameter
 		# ie unstressed, stressed syllable (1,2)
 
-		# TODO: select word based on rhyme scheme
 		# If no rhyme given, rhyme is randomly choosen such that last sylable in word is stressed
 		# TODO: Make lines forwards if used in haiku
 		if last_word == None:
@@ -190,16 +187,14 @@ class MarkovPoemGenerator(object):
 		level, int indicating accuracy of rhyme
 		@Returns a word from the corpus that matches inp
 		"""
-		# Get dictionary from Carnegie Mellon University API
-		entries = cmudict.entries()
 		# Get number of syllables for the inp word from dictionary
-		syllables = [(word, syl) for word, syl in entries if word == inp]
+		syllables = [(word, syl) for word, syl in d if word == inp]
 		print(inp, " - ", syllables)
 		# Create empty rhyming list
 		rhymes = []
 
 		for (word, syllable) in syllables:
- 			rhymes += [word for word, pron in entries if pron[-level:] == syllable[-level:] and word in self.corpus_noStop]
+ 			rhymes += [word for word, pron in d if pron[-level:] == syllable[-level:] and word in self.corpus_noStop]
 
 		print(inp, " rhymes with ", rhymes)
 		# If there are still no rhymes, increase level
@@ -214,7 +209,7 @@ class MarkovPoemGenerator(object):
 		if len(rhymes) <= 1:
 			print(inp + " has no rhyme in the corpus")
 			for (word, syllable) in syllables:
-	 			rhymes += [word for word, pron in entries if pron[-level:] == syllable[-level:]]
+	 			rhymes += [word for word, pron in d if pron[-level:] == syllable[-level:]]
 			if len(rhymes) <= 1:
 				print(inp + " has no rhymes. Choosing random word")
 				rhymes = random.choice(self.corpus_noStop)
