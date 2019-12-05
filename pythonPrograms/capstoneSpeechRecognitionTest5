@@ -7,12 +7,12 @@
 # recordings to the speech to text service
 
 import pyaudio
+import time
+import sys
 import sys
 import glob
-import random
 import serial
-import time
-from typewriter import Typewriter
+import random
 import MarkovPoemGenerator as mpg
 import speech_recognition as sr
 from ibm_watson import SpeechToTextV1
@@ -20,22 +20,77 @@ from ibm_watson.websocket import RecognizeCallback, AudioSource
 from threading import Thread
 from ibm_cloud_sdk_core.authenticators import IAMAuthenticator
 
-# For different versions
+
 try:
     from Queue import Queue, Full
 except ImportError:
     from queue import Queue, Full
 
-# Imported Files
 IBM_KEY = open("../keys/ibm-credentials.txt", "r").read().strip()
-ARD_PORT = "com4"
+ARD_PORT = "COM5"
 QUESTIONS = open("../testCorpus/mood.txt", "r").read().strip()
 
-running = True
+def write_qtitle():
+    questions = random.choice(QUESTIONS.split('?'))
+    print(questions)
+    return questions.strip().lower()
+
+
+def serial_ports():
+    if sys.platform.startswith('win'):
+        ports = ['COM%s' % (i + 1) for i in range(256)]
+    elif sys.platform.startswith('linux') or sys.platform.startswith('cygwin'):
+        # this excludes your current terminal "/dev/tty"
+        ports = glob.glob('/dev/tty[A-Za-z]*')
+    elif sys.platform.startswith('darwin'):
+        ports = glob.glob('/dev/tty.*')
+    else:
+        raise EnvironmentError('Unsupported platform')
+
+    result = []
+    for port in ports:
+        try:
+            s = serial.Serial(port)
+            s.close()
+            result.append(port)
+        except (OSError, serial.SerialException):
+            pass
+    return result
+
+def writePrinter(string, ser):
+    if ser:
+        try:
+            if not ser.isOpen():
+                try:
+                    ser.open()
+                except Exception as e:
+                    print("Error Reopening Port:", e)
+            # Check max string length
+            num_char = 0
+            for i in string:
+                ser.write(i.encode(encoding='ascii', error='ignore'))
+                num_char = num_char + 1
+                time.sleep(.4)
+                if i == '\n':
+                    num_char = 0
+                if num_char == 72:
+                    ser.write('\n'.encode(encoding='ascii', error='ignore'))
+                    time.sleep(.4)
+                    ser.write(' '.encode(encoding='ascii', error='ignore'))
+                    time.sleep(.4)
+                    ser.write(' '.encode(encoding='ascii', error='ignore'))
+                    time.sleep(.4)
+                    ser.write(' '.encode(encoding='ascii', error='ignore'))
+                    time.sleep(.4)
+                    num_char = 0
+            ser.write('\n')
+        except Exception as e:
+            print(e)
 
 ###############################################
 #### Initalize queue, classes to store the recordings ##
 ###############################################
+
 CHUNK = 2048
 # Note: It will discard if the websocket client can't consumme fast enough
 # So, increase the max size as per your choice
@@ -48,26 +103,18 @@ audio_source = AudioSource(q, True, True)
 
 mGen = mpg.MarkovPoemGenerator()
 
-# Initialize Serial
 try:
-    ser = serial.Serial(ARD_PORT, 9600)
-    time.sleep(3)
+    ser = serial.Serial(ARD_PORT)
 except Exception as e:
-    print('Serial Error: {}'.format(e))
+    print('Error: Input port not available')
 
+if serial_ports():
+    ser = serial.Serial(serial_ports()[0])
+else:
     ser = None
+    print('Error: No available ports')
 
-if ser:
-    tp = Typewriter(ser, QUESTIONS)
-    tp.write_qtitle()
-
-###############################################
-####### Prepare Speech to Text Service ########
-###############################################
-
-# initialize speech to text service
-authenticator = IAMAuthenticator(IBM_KEY)
-speech_to_text = SpeechToTextV1(authenticator=authenticator)
+# Initialize Serial
 
 # define callback for the speech to text service
 class MyRecognizeCallback(RecognizeCallback):
@@ -76,24 +123,13 @@ class MyRecognizeCallback(RecognizeCallback):
 
     def on_transcription(self, transcript):
         print(transcript[0]['transcript'])
-        if ser:
-            tp.writePrinter('.')
         mGen.add_to_corpus([x for x in transcript[0]['transcript'].split() if x != '%HESITATION'])
         if len(mGen.corpus_noStop) > 20:
             mGen.make_markov_haiku()
             mGen.print_poem()
             if ser:
-                tp.writePrinter('\n')
-                tp.writePrinter(mGen.poem)
-                tp.writePrinter('\n. . . . . . \n     by turkishtypewriter\n\n\n\n\n\n\n\n')
-                # Clear corpus for next poem
-            time.sleep(120)
-            mGen.corpus = []
-            mGen.corpus_noStop = []
-            mGen.title = ""
-            # Delay for x time until people add more paper
-            # Reprint Title
-            write_qtitle(ser)
+                writePrinter(mGen.poem, ser)
+                mGen.poem = ""
 
     def on_connected(self):
         print('Connection was successful')
@@ -106,36 +142,37 @@ class MyRecognizeCallback(RecognizeCallback):
 
     def on_listening(self):
         print('Service is listening')
+        writePrinter(write_qtitle(), ser)
 
     def on_hypothesis(self, hypothesis):
-        # Clear Print and allow shit to function
-        sys.stdout.flush()
+        # Interim result
+        pass
 
     def on_data(self, data):
+        writePrinter('. ', ser)
         pass
 
     def on_close(self):
         print("Connection closed")
 
+        # TODO: Add Closed
+        # TODO: Add Close option from Arduino
+
+###############################################
+####### Prepare Speech to Text Service ########
+###############################################
+
+# initialize speech to text service
+authenticator = IAMAuthenticator(IBM_KEY)
+speech_to_text = SpeechToTextV1(authenticator=authenticator)
+
 # this function will initiate the recognize service and pass in the AudioSource
 def recognize_using_websocket(*args):
     mcallback = MyRecognizeCallback()
-    # Will Run until Stopped
-    while running:
-        try:
-            speech_to_text.recognize_using_websocket(audio=audio_source,
+    speech_to_text.recognize_using_websocket(audio=audio_source,
                                              content_type='audio/l16; rate=44100',
                                              recognize_callback=mcallback,
-                                             inactivity_timeout = -1,
-                                             interim_results=True)
-        except Exception as e:
-            print('Error Starting Thread: {}'.format(e))
-
-        # To Catch Keyboard Interrupts
-        if running:
-            print('Connection closed. Restarting in 15 seconds')
-            time.sleep(15)
-
+                                             interim_results=False)
 
 ###############################################
 #### Prepare the for recording using Pyaudio ##
@@ -184,9 +221,7 @@ try:
 
 except KeyboardInterrupt:
     # stop recording
-    running = False
     stream.stop_stream()
     stream.close()
     audio.terminate()
     audio_source.completed_recording()
-    sys.exit()

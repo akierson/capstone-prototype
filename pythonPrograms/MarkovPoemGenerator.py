@@ -170,12 +170,19 @@ class MarkovPoemGenerator(object):
 
 		if type == "LINE":
 			# By full line
+			start = 0
 			while length < size:
-				prev_word, last_word = last_word, self.corpus[self.corpus.index(last_word) - 1 ]
-				if self.find_syllables(last_word) > (size - length):
-					last_word = random.choice(self.get_possible_words(prev_word, size - length))
-				line = last_word + " " + line
+				prev_word, last_word = last_word, self.corpus[self.corpus.index(last_word) + 1 ]
+				line = line + " " + last_word
 				length += self.find_syllables(last_word)
+				# Keep lines within size limit
+				# Reset if too many words
+				# TODO: Add fail safe if not enough in corpus
+				if length > size:
+					last_word = self.corpus_noStop[start]
+					start = start + 1
+					line = last_word
+					length = 0
 
 		return line
 
