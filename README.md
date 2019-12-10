@@ -3,7 +3,13 @@
 This is my final TAM project. It is an iterative repo to demonstrate the evolution of
 the final code used for my generative poem typewriter. More on the process can be [on my blog](http://akierson.com)
 
-## Built With
+## Final Built with
+
+* [IBM Watson](https://github.com/watson-developer-cloud/python-sdk)
+* [NLTK](https://www.nltk.org/)
+* [Pyaudio](https://people.csail.mit.edu/hubert/pyaudio/)
+
+## Previously Built With
 
 * [Speech Recognition](https://github.com/Uberi/speech_recognition/)
 * [Gutenberg Damit](https://github.com/aparrish/gutenberg-dammit)
@@ -20,5 +26,5 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 ## Acknowledgments
 
 * My advisor, Joel Swanson
-* Satan
-* Hipsters
+* Danny Rankin
+* Caleb Wright
