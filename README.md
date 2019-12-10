@@ -1,7 +1,6 @@
 # Capstone Project: Working Title
 
-This is my final TAM project. It is an iterative repo to show the evolution of
-the code used for my generative poem typewriter. More on the process can be [on my blog](http://akierson.com)
+This is my final TAM project. It is an iterative repo to show the evolution of the code used for my generative poem typewriter. The typewriter works, generally, by capturing sound and converts it to text using IBM's Watson. Then, using a selection of functions from NLTK, poems are generated using Markov chains. The poems are, lastly, sent via serial communication to an Arduino which prints triggers the corresponding transistors. More on the process can be found [on my blog](http://akierson.com)
 
 ## Final Built with
 
@@ -18,7 +17,7 @@ the code used for my generative poem typewriter. More on the process can be [on 
 
 ## Author
 
-* **Azariah Kierson-Galeano** - [Akierson](http://akierson.com)
+* **Azariah Kierson-Galeano** - [akierson.com](http://akierson.com)
 
 ## License
 
