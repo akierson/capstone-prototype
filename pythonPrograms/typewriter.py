@@ -12,6 +12,7 @@ class Typewriter(object):
         self.questions = questions.split('?')
 
     def writePrinter(self, string):
+        print('to Typewriter:', string)
         if self.ser:
             try:
                 if not self.ser.isOpen():

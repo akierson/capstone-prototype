@@ -76,9 +76,14 @@ class MyRecognizeCallback(RecognizeCallback):
 
     def on_transcription(self, transcript):
         print(transcript[0]['transcript'])
-        if ser:
-            tp.writePrinter('.')
-        mGen.add_to_corpus([x for x in transcript[0]['transcript'].split() if x != '%HESITATION'])
+
+        # Limit corpus to not include so many yeahs
+        if transcript[0]['transcript'][0] not in ['%HESITATION', 'yeah']:
+            if ser:
+                tp.writePrinter('.')
+            mGen.add_to_corpus([x for x in transcript[0]['transcript'].split() if x != '%HESITATION'])
+
+        # Make sure corpus long enough - needs at least 17 syllables
         if len(mGen.corpus_noStop) > 20:
             mGen.make_markov_haiku()
             mGen.print_poem()
@@ -93,7 +98,8 @@ class MyRecognizeCallback(RecognizeCallback):
             mGen.title = ""
             # Delay for x time until people add more paper
             # Reprint Title
-            write_qtitle(ser)
+            if ser:
+                tp.write_qtitle()
 
     def on_connected(self):
         print('Connection was successful')
