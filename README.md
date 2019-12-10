@@ -1,13 +1,14 @@
 # Capstone Project: Working Title
 
-This is my final TAM project. It is an iterative repo to demonstrate the evolution of
-the final code used for my generative poem typewriter. More on the process can be [on my blog](http://akierson.com)
+This is my final TAM project. It is an iterative repo to show the evolution of
+the code used for my generative poem typewriter. More on the process can be [on my blog](http://akierson.com)
 
 ## Final Built with
 
 * [IBM Watson](https://github.com/watson-developer-cloud/python-sdk)
 * [NLTK](https://www.nltk.org/)
 * [Pyaudio](https://people.csail.mit.edu/hubert/pyaudio/)
+* [Arduino](https://www.arduino.cc/)
 
 ## Previously Built With
 
